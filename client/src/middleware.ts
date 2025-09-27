@@ -1,35 +1,17 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-const isStudentRoute = createRouteMatcher(["/user/(.*)"]);
-const isTeacherRoute = createRouteMatcher(["/teacher/(.*)"]);
+// This is a pass-through middleware. It does nothing and allows all requests to proceed.
+// Route protection is now handled on the client-side in your (dashboard)/layout.tsx file.
+export function middleware(request: NextRequest) {
+  return NextResponse.next()
+}
 
-export default clerkMiddleware(async (auth, req) => {
-  const { sessionClaims } = await auth();
-  const userRole =
-    (sessionClaims?.metadata as { userType: "student" | "teacher" })
-      ?.userType || "student";
-
-  if (isStudentRoute(req)) {
-    if (userRole !== "student") {
-      const url = new URL("/teacher/courses", req.url);
-      return NextResponse.redirect(url);
-    }
-  }
-
-  if (isTeacherRoute(req)) {
-    if (userRole !== "teacher") {
-      const url = new URL("/user/courses", req.url);
-      return NextResponse.redirect(url);
-    }
-  }
-});
-
+// Optionally, you can remove the matcher to have the middleware run on all routes
+// or keep it to maintain the same scope. For simplicity, we'll keep it.
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run for API routes
     "/(api|trpc)(.*)",
   ],
 };

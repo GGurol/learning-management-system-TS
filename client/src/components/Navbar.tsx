@@ -1,16 +1,36 @@
 "use client";
 
-import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs";
-import { dark } from "@clerk/themes";
-import { Bell, BookOpen } from "lucide-react";
+import { Bell, BookOpen, LogOut, User as UserIcon } from "lucide-react";
 import Link from "next/link";
-import React, { useState } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@/state/redux"; // Import our Redux hooks
+import { logout, reset } from "@/state/authSlice"; // Import our logout action
+import { useRouter } from "next/navigation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Navbar = ({ isCoursePage }: { isCoursePage: boolean }) => {
-  const { user } = useUser();
-  const userRole = user?.publicMetadata?.userType as "student" | "teacher";
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth); // Get user from Redux store
+
+  const handleLogout = () => {
+    dispatch(logout());
+    dispatch(reset());
+    router.push('/signin');
+  };
+  
+  // Create a fallback for the avatar with the user's initials
+  const userInitials = user?.name?.substring(0, 2).toUpperCase() || 'U';
+  const userRole = user?.role;
 
   return (
     <nav className="dashboard-navbar">
@@ -43,20 +63,29 @@ const Navbar = ({ isCoursePage }: { isCoursePage: boolean }) => {
             <Bell className="nondashboard-navbar__notification-icon" />
           </button>
 
-          <UserButton
-            appearance={{
-              baseTheme: dark,
-              elements: {
-                userButtonOuterIdentifier: "text-customgreys-dirtyGrey",
-                userButtonBox: "scale-90 sm:scale-100",
-              },
-            }}
-            showName={true}
-            userProfileMode="navigation"
-            userProfileUrl={
-              userRole === "teacher" ? "/teacher/profile" : "/user/profile"
-            }
-          />
+          {/* --- CORRECTED: Replaced Clerk's <UserButton> with our own custom component --- */}
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <Avatar>
+                {/* Add an actual image source if your user object has one */}
+                <AvatarImage src={user?.avatarUrl} /> 
+                <AvatarFallback>{userInitials}</AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{user?.name}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => router.push(userRole === 'admin' ? '/teacher/profile' : '/user/profile')}>
+                <UserIcon className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </nav>

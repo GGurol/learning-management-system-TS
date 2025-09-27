@@ -7,10 +7,12 @@ import { Provider } from "react-redux";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import globalReducer from "@/state";
 import { api } from "@/state/api";
+import authReducer from "@/state/authSlice"; // --- ADD THIS LINE ---
 
 /* REDUX STORE */
 const rootReducer = combineReducers({
   global: globalReducer,
+  auth: authReducer, // --- AND THIS LINE ---
   [api.reducerPath]: api.reducer,
 });
 

@@ -1,0 +1,52 @@
+services:
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    container_name: lms-dynamodb
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ."
+    ports:
+      - "8001:8000" # Use 8001 on host to avoid conflict with backend
+    volumes:
+      - dynamodb_data:/home/dynamodblocal/data
+    networks:
+      - lms-network
+
+  server:
+    build: ./server
+    container_name: lms-server
+    command: npm run dev
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    env_file:
+      - ./server/.env
+    networks:
+      - lms-network
+    depends_on:
+      - dynamodb
+
+  client:
+    build: ./client
+    container_name: lms-client
+    command: npm run dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    env_file:
+      - ./client/.env.local
+    networks:
+      - lms-network
+    depends_on:
+      - server
+
+volumes:
+  dynamodb_data:
+
+networks:
+  lms-network:
+    driver: bridge
